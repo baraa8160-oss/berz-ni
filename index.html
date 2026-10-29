@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102b50">
+<title>BerzNi | برزني - سوق البيع والشراء والمقايضة</title>
+<meta name="description" content="برزني منصة جزائرية للبيع والشراء والمقايضة بين الأفراد والشركات والتجار.">
+<style>
+:root{--navy:#102b50;--blue:#1d5b9e;--silver:#dce4ed;--bg:#f4f7fb;--ink:#17283d;--muted:#66778b}
+*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+.top{background:var(--navy);color:#fff;padding:8px 5%;font-size:13px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+header{background:#fff;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--silver)}
+.head{max-width:1180px;margin:auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;color:var(--navy);text-decoration:none}.logo{width:45px;height:45px;border-radius:14px;background:linear-gradient(145deg,#15375f,#3985c6);display:grid;place-items:center;color:white;font-weight:bold;font-size:21px}.brand strong{font-size:23px}.brand small{display:block;color:var(--muted);font-size:11px}
+nav{display:flex;gap:17px;flex-wrap:wrap}nav a{color:#40536a;text-decoration:none;font-size:14px;font-weight:600}
+.btn{border:0;border-radius:11px;padding:11px 17px;font-weight:bold;cursor:pointer}.primary{background:var(--blue);color:white}.light{background:#edf3f9;color:var(--navy);border:1px solid var(--silver)}
+.hero{background:linear-gradient(115deg,#102b50,#1b4e80 58%,#347db8);color:white;padding:58px 22px 65px}.hero-inner,.container{max-width:1180px;margin:auto}.hero h1{font-size:clamp(30px,5vw,48px);line-height:1.35;margin:12px 0}.hero p{color:#d8e8f8;max-width:650px}.search{display:flex;gap:8px;background:#fff;padding:7px;border-radius:14px;max-width:760px;margin-top:24px}.search input{border:0;outline:0;flex:1;min-width:0;padding:10px;color:var(--ink);font-size:15px}.container{padding:0 22px}
+.cats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:-28px;position:relative}.cat{background:#fff;border:1px solid var(--silver);border-radius:15px;padding:18px;box-shadow:0 8px 25px #102b5012;text-align:center;color:var(--ink);text-decoration:none}.cat b{display:block}.cat span{font-size:27px}
+section{padding:45px 0 10px}.section-head{display:flex;justify-content:space-between;align-items:end;margin-bottom:18px;gap:12px}.section-head h2{margin:0;color:var(--navy);font-size:24px}.section-head p{margin:3px 0 0;color:var(--muted);font-size:13px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.filter{border:1px solid var(--silver);background:white;color:#52647a;border-radius:25px;padding:7px 15px}.filter.active{background:var(--navy);color:white}
+.products{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.product{background:white;border:1px solid var(--silver);border-radius:15px;overflow:hidden;box-shadow:0 5px 18px #102b5008}.product-art{height:145px;background:linear-gradient(145deg,#e8eef5,#d5e0eb);display:grid;place-items:center;font-size:52px}.product-body{padding:13px}.product h3{font-size:15px;margin:0 0 5px;color:var(--navy)}.price{font-weight:bold;color:var(--blue)}.location{font-size:12px;color:var(--muted);margin-top:7px}
+.promo{background:#fff;border:1px solid var(--silver);border-radius:17px;padding:24px;display:flex;gap:18px;align-items:center;margin-top:35px}.promo-icon{font-size:35px;background:#edf3f9;border-radius:17px;padding:12px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.step{background:white;border:1px solid var(--silver);border-radius:14px;padding:20px}.step h3{font-size:16px;color:var(--navy)}
+footer{margin-top:55px;background:#0d2441;color:#d8e4f1;padding:30px 22px}.foot{max-width:1180px;margin:auto;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.modal-back{display:none;position:fixed;inset:0;background:#081a30a8;z-index:30;padding:18px;overflow:auto;align-items:center;justify-content:center}.modal-back.show{display:flex}.modal{width:min(520px,100%);background:white;border-radius:18px;padding:23px}.modal-head{display:flex;justify-content:space-between;align-items:center}.modal h2{margin:0;color:var(--navy)}.close{border:0;background:#edf2f7;border-radius:9px;padding:5px 11px;font-size:20px}.field{margin-top:13px}.field label{display:block;font-size:13px;font-weight:bold;margin-bottom:5px}.field input,.field select,.field textarea{width:100%;border:1px solid #d6e0ea;border-radius:10px;padding:10px;font:inherit}.field textarea{min-height:75px}.notice{font-size:12px;color:var(--muted);background:#f2f6fa;padding:10px;margin-top:12px;border-radius:9px}
+@media(max-width:850px){.products{grid-template-columns:repeat(2,1fr)}.cats{grid-template-columns:repeat(2,1fr)}nav{gap:10px}.hero{padding-top:42px}}
+@media(max-width:520px){.head{padding:12px}.head-actions{display:flex;gap:6px}.head-actions .btn{padding:9px 11px}.products{gap:10px}.product-art{height:115px}.section-head h2{font-size:20px}.promo{align-items:flex-start}.steps{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="top"><span>🇩🇿 منصة جزائرية تجمع بين العرض والطلب</span><span>بيع • شراء • مقايضة</span></div>
+<header><div class="head">
+<a class="brand" href="#"><span class="logo">ب</span><span><strong>BerzNi | برزني</strong><small>سوقك الذكي للبيع والشراء والمقايضة</small></span></a>
+<nav><a href="#market">السوق</a><a href="#business">سوق الشركات</a><a href="#how">كيف يعمل؟</a></nav>
+<div class="head-actions"><button class="btn light" onclick="showInfo()">دخول</button><button class="btn primary" onclick="openModal()">أضف إعلانك</button></div>
+</div></header>
+<main>
+<div class="hero"><div class="hero-inner"><span class="eyebrow">منصة واحدة… فرص لا محدودة</span><h1>ما تحتاجه موجود،<br>وما لا تحتاجه قد يفيد غيرك!</h1><p>اعرض منتجاتك، ابحث عما تحتاجه، أو اعقد صفقة مقايضة. برزني يجمع الأفراد والشركات والتجار في مكان واحد.</p>
+<div class="search"><input id="searchInput" placeholder="ابحث عن منتج، خدمة أو مادة أولية..."><button class="btn primary" onclick="searchProducts()">ابحث</button></div><div class="hero-note">بيع وشراء ومقايضة في مختلف ولايات الجزائر</div></div></div>
+<div class="container"><div class="cats">
+<a class="cat" href="#market" onclick="setFilter('all')"><span>🛍️</span><b>سوق الأفراد</b><small>منتجات مستعملة وجديدة</small></a>
+<a class="cat" href="#business" onclick="setFilter('business')"><span>🏭</span><b>سوق الشركات</b><small>مواد أولية ومخزون ومنتجات</small></a>
+<a class="cat" href="#market" onclick="setFilter('exchange')"><span>🔄</span><b>المقايضة</b><small>بدّل ما لديك بما تحتاجه</small></a>
+<a class="cat" href="#market" onclick="openModal()"><span>➕</span><b>أضف إعلاناً</b><small>اعرض منتجك بسهولة</small></a>
+</div>
+<section id="market"><div class="section-head"><div><h2>اكتشف الإعلانات</h2><p>فرص ومنتجات معروضة من أعضاء برزني</p></div><button class="btn primary" onclick="openModal()">+ نشر إعلان</button></div>
+<div class="filters"><button class="filter active" data-filter="all" onclick="setFilter('all')">الكل</button><button class="filter" data-filter="sale" onclick="setFilter('sale')">للبيع</button><button class="filter" data-filter="exchange" onclick="setFilter('exchange')">للمقايضة</button><button class="filter" data-filter="business" onclick="setFilter('business')">للشركات</button></div>
+<div class="products" id="products"></div>
+</section>
+<section id="business"><div class="promo"><div class="promo-icon">🏢</div><div><h3>هل تمثل شركة أو نشاطاً تجارياً؟</h3><p>اعرض المواد الأولية، المنتجات الصناعية، فائض المخزون، ومعداتك أمام المهتمين من مختلف الولايات.</p><button class="btn primary" onclick="openModal('business')">أضف إعلان شركة</button></div></div></section>
+<section id="how"><div class="section-head"><div><h2>كيف يعمل برزني؟</h2><p>ثلاث خطوات بسيطة للانطلاق</p></div></div><div class="steps"><div class="step"><span>①</span><h3>ابحث أو اعرض</h3><p>اكتشف الإعلانات أو أضف إعلانك مع وصف واضح وصورة.</p></div><div class="step"><span>②</span><h3>تواصل واتفق</h3><p>تواصل مع صاحب الإعلان واتفقا على التفاصيل والسعر.</p></div><div class="step"><span>③</span><h3>أتمم الصفقة</h3><p>بيع أو شراء أو مقايضة مباشرة بين الطرفين.</p></div></div></section>
+</div></main>
+<footer><div class="foot"><div><strong>BerzNi | برزني</strong><div>منصة جزائرية للتبادل التجاري والمقايضة.</div></div><div>© 2026 BerzNi — جميع الحقوق محفوظة</div></div></footer>
+<div class="modal-back" id="listingModal" role="dialog" aria-modal="true"><div class="modal"><div class="modal-head"><h2>نشر إعلان جديد</h2><button class="close" onclick="closeModal()">×</button></div>
+<form id="listingForm"><div class="field"><label for="title">عنوان الإعلان</label><input id="title" required maxlength="65" placeholder="مثال: هاتف ذكي بحالة جيدة"></div><div class="field"><label for="kind">نوع الإعلان</label><select id="kind"><option value="sale">للبيع</option><option value="exchange">للمقايضة</option><option value="business">إعلان شركة</option></select></div><div class="field"><label for="price">السعر أو المطلوب في المقايضة</label><input id="price" required maxlength="80" placeholder="مثال: 80000 دج أو مقايضة بمنتج آخر"></div><div class="field"><label for="wilaya">الولاية</label><select id="wilaya" required><option value="">اختر الولاية</option><option>سطيف</option><option>الجزائر</option><option>قسنطينة</option><option>برج بوعريريج</option><option>باتنة</option><option>بجاية</option><option>تيزي وزو</option><option>وهران</option></select></div><div class="field"><label for="description">وصف الإعلان</label><textarea id="description" maxlength="220" placeholder="اكتب تفاصيل المنتج أو العرض..."></textarea></div><div class="notice">هذه نسخة تجريبية: الإعلانات تحفظ على هذا الجهاز فقط، ولا تظهر بعد على الإنترنت للزوار الآخرين. سنربطها بقاعدة بيانات حقيقية لاحقاً.</div><div class="form-actions"><button class="btn primary" type="submit">نشر الإعلان التجريبي</button><button class="btn light" type="button" onclick="closeModal()">إلغاء</button></div></form></div></div>
+<script>
+const starter=[
+{title:"دراجة هوائية بحالة جيدة",kind:"sale",price:"45,000 دج",wilaya:"سطيف",icon:"🚲"},
+{title:"أبحث عن مقايضة هاتف بهاتف",kind:"exchange",price:"مقايضة حسب الاتفاق",wilaya:"برج بوعريريج",icon:"📱"},
+{title:"فائض مخزون قطع بلاستيكية",kind:"business",price:"اتصال للتفاوض",wilaya:"قسنطينة",icon:"🏭"},
+{title:"أثاث منزلي مستعمل",kind:"sale",price:"12,000 دج",wilaya:"باتنة",icon:"🛋️"}];
+let activeFilter="all",listings=[];try{listings=JSON.parse(localStorage.getItem("berzni_demo_listings")||"[]")}catch(e){listings=[]}
+function allListings(){return [...listings,...starter]}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function render(){const q=(document.getElementById("searchInput").value||"").trim().toLowerCase();const data=allListings().filter(x=>(activeFilter==="all"||x.kind===activeFilter)&&(!q||[x.title,x.price,x.wilaya,x.description||""].join(" ").toLowerCase().includes(q)));const box=document.getElementById("products");if(!data.length){box.innerHTML='<div class="empty">لا توجد إعلانات مطابقة حالياً.</div>';return}box.innerHTML=data.map(x=>'<article class="product"><div class="product-art">'+(x.icon||"📦")+'</div><div class="product-body"><h3>'+escapeHTML(x.title)+'</h3><div class="price">'+escapeHTML(x.price)+'</div><div class="location">📍 '+escapeHTML(x.wilaya)+'　•　'+(x.kind==="exchange"?"للمقايضة":x.kind==="business"?"للشركات":"للبيع")+'</div></div></article>').join("")}
+function setFilter(f){activeFilter=f;document.querySelectorAll(".filter").forEach(b=>b.classList.toggle("active",b.dataset.filter===f));render()}
+function searchProducts(){render();document.getElementById("market").scrollIntoView({behavior:"smooth"})}
+document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchProducts()});
+function openModal(kind){document.getElementById("listingModal").classList.add("show");if(kind)document.getElementById("kind").value=kind}
+function closeModal(){document.getElementById("listingModal").classList.remove("show")}
+function showInfo(){alert("التسجيل والحسابات والمحادثات ستُفعّل في المرحلة التالية بعد ربط المنصة بقاعدة بيانات آمنة.")}
+document.getElementById("listingModal").addEventListener("click",e=>{if(e.target.id==="listingModal")closeModal()});
+document.getElementById("listingForm").addEventListener("submit",e=>{e.preventDefault();const item={title:document.getElementById("title").value.trim(),kind:document.getElementById("kind").value,price:document.getElementById("price").value.trim(),wilaya:document.getElementById("wilaya").value,description:document.getElementById("description").value.trim(),icon:"📦"};listings.unshift(item);localStorage.setItem("berzni_demo_listings",JSON.stringify(listings));e.target.reset();closeModal();setFilter("all");document.getElementById("market").scrollIntoView({behavior:"smooth"});});
+render();
+</script>
+</body></html>
