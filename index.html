@@ -61,6 +61,7 @@ const starter=[
 {title:"أبحث عن مقايضة هاتف بهاتف",kind:"exchange",price:"مقايضة حسب الاتفاق",wilaya:"برج بوعريريج",icon:"📱"},
 {title:"فائض مخزون قطع بلاستيكية",kind:"business",price:"اتصال للتفاوض",wilaya:"قسنطينة",icon:"🏭"},
 {title:"أثاث منزلي مستعمل",kind:"sale",price:"12,000 دج",wilaya:"باتنة",icon:"🛋️"}];
+let authMode="login",currentUser=null,remoteListings=[];
 let activeFilter="all",listings=[];try{listings=JSON.parse(localStorage.getItem("berzni_demo_listings")||"[]")}catch(e){listings=[]}
 function allListings(){return [...listings,...starter]}
 function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
