@@ -9,7 +9,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB4mYC2iZZCaJQezHPnL7yaT-4EdCBXs",
+  apiKey: "AIzaSyB4mYC2iZZCaJQezHPnauL7yaT-4EdCBXs",
   authDomain: "berzni-fe056.firebaseapp.com",
   projectId: "berzni-fe056",
   storageBucket: "berzni-fe056.firebasestorage.app",
