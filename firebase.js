@@ -1,11 +1,15 @@
 // Firebase connection for BerzNi
-// Browser CDN setup: no npm install or build step is required.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB4mYC2iZZCaJQezHPnauL7yaT-4EdCBXs",
+  apiKey: "AIzaSyB4mYC2iZZCaJQezHPnL7yaT-4EdCBXs",
   authDomain: "berzni-fe056.firebaseapp.com",
   projectId: "berzni-fe056",
   storageBucket: "berzni-fe056.firebasestorage.app",
@@ -17,6 +21,21 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Expose services for the next app features (login and shared listings).
-window.berzniFirebase = { app, auth, db };
-console.info("BerzNi: Firebase initialized successfully.");
+window.berzniFirebase = {
+  app, auth, db,
+  createAccount: (email, password) => createUserWithEmailAndPassword(auth, email, password),
+  login: (email, password) => signInWithEmailAndPassword(auth, email, password),
+  logout: () => signOut(auth),
+  watchAuth: (callback) => onAuthStateChanged(auth, callback),
+  publishListing: (item) => addDoc(collection(db, "listings"), {
+    ...item, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp()
+  }),
+  watchListings: (callback, onError) => onSnapshot(
+    query(collection(db, "listings"), orderBy("createdAt", "desc")),
+    snapshot => callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
+    onError
+  )
+};
+
+document.dispatchEvent(new Event("berzni-firebase-ready"));
+console.info("BerzNi: Firebase initialized.");
