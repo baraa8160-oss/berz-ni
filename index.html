@@ -63,7 +63,7 @@ const starter=[
 {title:"أثاث منزلي مستعمل",kind:"sale",price:"12,000 دج",wilaya:"باتنة",icon:"🛋️"}];
 let authMode="login",currentUser=null,remoteListings=[];
 let activeFilter="all",listings=[];try{listings=JSON.parse(localStorage.getItem("berzni_demo_listings")||"[]")}catch(e){listings=[]}
-function allListings(){return [...listings,...starter]}
+function allListings(){return [...remoteListings,...listings,...starter]}
 function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function render(){const q=(document.getElementById("searchInput").value||"").trim().toLowerCase();const data=allListings().filter(x=>(activeFilter==="all"||x.kind===activeFilter)&&(!q||[x.title,x.price,x.wilaya,x.description||""].join(" ").toLowerCase().includes(q)));const box=document.getElementById("products");if(!data.length){box.innerHTML='<div class="empty">لا توجد إعلانات مطابقة حالياً.</div>';return}box.innerHTML=data.map(x=>'<article class="product"><div class="product-art">'+(x.icon||"📦")+'</div><div class="product-body"><h3>'+escapeHTML(x.title)+'</h3><div class="price">'+escapeHTML(x.price)+'</div><div class="location">📍 '+escapeHTML(x.wilaya)+'　•　'+(x.kind==="exchange"?"للمقايضة":x.kind==="business"?"للشركات":"للبيع")+'</div></div></article>').join("")}
 function setFilter(f){activeFilter=f;document.querySelectorAll(".filter").forEach(b=>b.classList.toggle("active",b.dataset.filter===f));render()}
