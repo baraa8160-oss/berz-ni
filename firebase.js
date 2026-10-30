@@ -5,7 +5,7 @@ import {
   signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp
+  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, limit, getDocs, startAfter
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -31,10 +31,28 @@ window.berzniFirebase = {
     ...item, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp()
   }),
   watchListings: (callback, onError) => onSnapshot(
-    query(collection(db, "listings"), orderBy("createdAt", "desc")),
-    snapshot => callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
+    query(collection(db, "listings"), orderBy("createdAt", "desc"), limit(12)),
+    snapshot => callback({
+      items: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+      lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
+      hasMore: snapshot.size === 12
+    }),
     onError
-  )
+  ),
+  getMoreListings: async (lastDoc) => {
+    if (!lastDoc) return { items: [], lastDoc: null, hasMore: false };
+    const page = await getDocs(query(
+      collection(db, "listings"),
+      orderBy("createdAt", "desc"),
+      startAfter(lastDoc),
+      limit(12)
+    ));
+    return {
+      items: page.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+      lastDoc: page.docs[page.docs.length - 1] || lastDoc,
+      hasMore: page.size === 12
+    };
+  }
 };
 
 document.dispatchEvent(new Event("berzni-firebase-ready"));
