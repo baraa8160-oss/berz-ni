@@ -25,32 +25,37 @@ window.berzniFirebase = {
   app, auth, db,
   uploadListingImage: async (file) => {
     if (!auth.currentUser) throw new Error("يجب تسجيل الدخول أولاً.");
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) throw new Error("الصورة يجب أن تكون JPG أو PNG أو WebP وألا يتجاوز حجمها 5 ميغابايت.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      throw new Error("الصورة يجب أن تكون JPG أو PNG أو WebP وألا يتجاوز حجمها 5 ميغابايت.");
+    }
 
-    // تصغير الصورة لتسريع الرفع من الهاتف
+    // تصغير الصورة داخل الهاتف قبل إرسالها لتسريع الرفع.
     let uploadFile = file;
     try {
       const bitmap = await createImageBitmap(file);
       const maxSide = 1400;
       const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-      if (scale < 1 || file.type !== "image/jpeg") {
+      if (scale < 1 || file.size > 700 * 1024) {
         const canvas = document.createElement("canvas");
         canvas.width = Math.round(bitmap.width * scale);
         canvas.height = Math.round(bitmap.height * scale);
-        canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.78));
-        if (blob) uploadFile = new File([blob], "berzni-image.jpg", { type: "image/jpeg" });
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        const compressed = await new Promise((resolve, reject) => {
+          canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("تعذر تجهيز الصورة.")), "image/jpeg", 0.78);
+        });
+        uploadFile = new File([compressed], "berzni-image.jpg", { type: "image/jpeg" });
       }
       bitmap.close();
-    } catch (e) {
-      console.warn("Image compression skipped:", e);
+    } catch (compressionError) {
+      console.warn("Image compression skipped:", compressionError);
     }
 
     const formData = new FormData();
     formData.append("file", uploadFile);
     formData.append("upload_preset", "berzni_upload");
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 45000);
+    const timeout = setTimeout(() => controller.abort(), 45000);
     try {
       const response = await fetch("https://api.cloudinary.com/v1_1/wiq0fgyr/image/upload", {
         method: "POST",
@@ -64,10 +69,12 @@ window.berzniFirebase = {
       }
       return result.secure_url;
     } catch (error) {
-      if (error.name === "AbortError") throw new Error("استغرق رفع الصورة أكثر من 45 ثانية. تحقق من الإنترنت وحاول بصورة أصغر.");
+      if (error.name === "AbortError") {
+        throw new Error("استغرق رفع الصورة أكثر من 45 ثانية. تحقق من الإنترنت ثم أعد المحاولة.");
+      }
       throw error;
     } finally {
-      clearTimeout(timer);
+      clearTimeout(timeout);
     }
   },
   createAccount: (email, password) => createUserWithEmailAndPassword(auth, email, password),
