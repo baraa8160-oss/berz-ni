@@ -7,6 +7,7 @@ import {
 import {
   getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, limit, getDocs, startAfter
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB4mYC2iZZCaJQezHPnauL7yaT-4EdCBXs",
@@ -20,9 +21,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 window.berzniFirebase = {
   app, auth, db,
+  uploadListingImage: async (file) => {
+    if (!auth.currentUser) throw new Error("يجب تسجيل الدخول أولاً.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) throw new Error("الصورة يجب أن تكون JPG أو PNG أو WebP وألا يتجاوز حجمها 5 ميغابايت.");
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const imageRef = ref(storage, `listings/${auth.currentUser.uid}/${Date.now()}_${safeName}`);
+    await uploadBytes(imageRef, file, { contentType: file.type });
+    return await getDownloadURL(imageRef);
+  },
   createAccount: (email, password) => createUserWithEmailAndPassword(auth, email, password),
   login: (email, password) => signInWithEmailAndPassword(auth, email, password),
   logout: () => signOut(auth),
