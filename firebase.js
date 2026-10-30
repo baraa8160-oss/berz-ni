@@ -26,19 +26,49 @@ window.berzniFirebase = {
   uploadListingImage: async (file) => {
     if (!auth.currentUser) throw new Error("يجب تسجيل الدخول أولاً.");
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) throw new Error("الصورة يجب أن تكون JPG أو PNG أو WebP وألا يتجاوز حجمها 5 ميغابايت.");
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "berzni_upload");
-    const response = await fetch("https://api.cloudinary.com/v1_1/wiq0fgyr/image/upload", {
-      method: "POST",
-      body: formData
-    });
-    const result = await response.json();
-    if (!response.ok || !result.secure_url) {
-      console.error("Cloudinary upload error:", result);
-      throw new Error(result.error?.message || "فشل رفع الصورة إلى Cloudinary.");
+
+    // تصغير الصورة لتسريع الرفع من الهاتف
+    let uploadFile = file;
+    try {
+      const bitmap = await createImageBitmap(file);
+      const maxSide = 1400;
+      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+      if (scale < 1 || file.type !== "image/jpeg") {
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(bitmap.width * scale);
+        canvas.height = Math.round(bitmap.height * scale);
+        canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.78));
+        if (blob) uploadFile = new File([blob], "berzni-image.jpg", { type: "image/jpeg" });
+      }
+      bitmap.close();
+    } catch (e) {
+      console.warn("Image compression skipped:", e);
     }
-    return result.secure_url;
+
+    const formData = new FormData();
+    formData.append("file", uploadFile);
+    formData.append("upload_preset", "berzni_upload");
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 45000);
+    try {
+      const response = await fetch("https://api.cloudinary.com/v1_1/wiq0fgyr/image/upload", {
+        method: "POST",
+        body: formData,
+        signal: controller.signal
+      });
+      const result = await response.json();
+      if (!response.ok || !result.secure_url) {
+        console.error("Cloudinary upload error:", result);
+        throw new Error(result.error?.message || "فشل رفع الصورة إلى Cloudinary.");
+      }
+      return result.secure_url;
+    } catch (error) {
+      if (error.name === "AbortError") throw new Error("استغرق رفع الصورة أكثر من 45 ثانية. تحقق من الإنترنت وحاول بصورة أصغر.");
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
   },
   createAccount: (email, password) => createUserWithEmailAndPassword(auth, email, password),
   login: (email, password) => signInWithEmailAndPassword(auth, email, password),
