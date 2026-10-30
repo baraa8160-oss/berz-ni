@@ -81,7 +81,9 @@ window.berzniFirebase = {
   login: (email, password) => signInWithEmailAndPassword(auth, email, password),
   logout: () => signOut(auth),
   watchAuth: (callback) => onAuthStateChanged(auth, callback),
-  getProfile: async () => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); const snap = await getDoc(doc(db, "users", auth.currentUser.uid)); return snap.exists() ? snap.data() : {}; },\n  saveProfile: async (profile) => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); return setDoc(doc(db, "users", auth.currentUser.uid), { ...profile, email: auth.currentUser.email || "", updatedAt: serverTimestamp() }, { merge: true }); },\n  publishListing: (item) => addDoc(collection(db, "listings"), {
+  getProfile: async () => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); const snap = await getDoc(doc(db, "users", auth.currentUser.uid)); return snap.exists() ? snap.data() : {}; },
+  saveProfile: async (profile) => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); return setDoc(doc(db, "users", auth.currentUser.uid), { ...profile, email: auth.currentUser.email || "", updatedAt: serverTimestamp() }, { merge: true }); },
+  publishListing: (item) => addDoc(collection(db, "listings"), {
     ...item, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp()
   }),
   watchListings: (callback, onError) => onSnapshot(
