@@ -106,7 +106,27 @@ async function showListingDetail(id){
  const wa=/^213[5-7][0-9]{8}$/.test(phone)?phone:"";
  if(!(currentUser&&item.ownerUid===currentUser.uid))registerListingView(item);
  const date=listingTime(item)?new Date(listingTime(item)).toLocaleDateString("ar-DZ",{year:"numeric",month:"long",day:"numeric"}):"غير محدد";
- host.innerHTML='<div style="margin-bottom:14px"><button class="btn light" onclick="closeListingDetail()">← العودة إلى الإعلانات</button></div><article class="detail-card"><div class="detail-image">'+listingImageMarkup(item)+'</div><div class="detail-content"><div class="price">'+escapeHTML(item.price||"السعر غير محدد")+'</div><h1>'+escapeHTML(item.title||"إعلان برزني")+'</h1><div class="detail-meta"><span>📍 '+escapeHTML(item.wilaya||"ولاية غير محددة")+'</span><span>• '+(item.kind==="exchange"?"للمقايضة":item.kind==="business"?"للشركات":"للبيع")+'</span><span>👤 '+escapeHTML(item.ownerName||"عضو برزني")+'</span><span>📅 '+date+'</span><span class="views-count" data-listing-views="'+escapeHTML(item.id)+'">👁️ المشاهدات: '+Math.max(0,Number(item.views)||0)+'</span></div><h3>تفاصيل الإعلان</h3><div class="detail-description">'+escapeHTML(item.description||"لم يضف صاحب الإعلان وصفاً.")+'</div><div class="detail-actions">'+(wa?'<a class="btn primary" style="background:#168b55;color:white" href="https://wa.me/'+wa+'" target="_blank" rel="noopener">تواصل عبر واتساب</a>':'')+'<button class="favorite-toggle '+(isFavorite(item.id)?'saved':'')+'" onclick="toggleFavorite(\''+escapeHTML(item.id)+'\')">'+(isFavorite(item.id)?'♥ محفوظ في المفضلة':'♡ أضف إلى المفضلة')+'</button><button class="btn light" onclick="shareListing()">مشاركة الإعلان ↗</button>'+(isSiteAdmin()?'<button class="btn light" style="color:#b42318" onclick="deleteListing(\''+escapeHTML(item.id)+'\')">حذف الإعلان</button>':'')+</div></div></article>';
+ host.innerHTML = `<div style="margin-bottom:14px"><button class="btn light" onclick="closeListingDetail()">← العودة إلى الإعلانات</button></div>
+<article class="detail-card">
+<div class="detail-image">${listingImageMarkup(item)}</div>
+<div class="detail-content">
+<div class="price">${escapeHTML(item.price||"السعر غير محدد")}</div>
+<h1>${escapeHTML(item.title||"إعلان برزني")}</h1>
+<div class="detail-meta">
+<span>📍 ${escapeHTML(item.wilaya||"ولاية غير محددة")}</span>
+<span>• ${item.kind==="exchange"?"للمقايضة":item.kind==="business"?"للشركات":"للبيع"}</span>
+<span>👤 ${escapeHTML(item.ownerName||"عضو برزني")}</span>
+<span>📅 ${date}</span>
+<span class="views-count" data-listing-views="${escapeHTML(item.id)}">👁️ المشاهدات: ${Math.max(0,Number(item.views)||0)}</span>
+</div>
+<h3>تفاصيل الإعلان</h3>
+<div class="detail-description">${escapeHTML(item.description||"لم يضف صاحب الإعلان وصفاً.")}</div>
+<div class="detail-actions">
+${wa?'<a class="btn primary" style="background:#168b55;color:white" href="https://wa.me/'+wa+'" target="_blank" rel="noopener">تواصل عبر واتساب</a>':""}
+<button class="favorite-toggle ${isFavorite(item.id)?"saved":""}" onclick="toggleFavorite(&quot;${escapeHTML(item.id)}&quot;)">${isFavorite(item.id)?"♥ محفوظ في المفضلة":"♡ أضف إلى المفضلة"}</button>
+<button class="btn light" onclick="shareListing()">مشاركة الإعلان ↗</button>
+${isSiteAdmin()?'<button class="btn light" style="color:#b42318" onclick="deleteListing(&quot;'+escapeHTML(item.id)+'&quot;)">حذف الإعلان</button>':""}
+</div></div></article>`;
 }
 function openImageZoom(src,alt){
  const overlay=document.createElement("div");
