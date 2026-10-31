@@ -113,7 +113,7 @@ async function showListingDetail(id){
  host.querySelector('#detailTitle').textContent=item.title||'إعلان برزني';
  host.querySelector('#detailDescription').textContent=item.description||'لم يضف صاحب الإعلان وصفاً.';
  const imageBox=host.querySelector('#detailImage');
- if(item.icon&&/^https:\\/\\//.test(item.icon)){const image=document.createElement('img');image.src=item.icon;image.alt=item.title||'صورة الإعلان';imageBox.appendChild(image)}else{imageBox.textContent=item.icon||'📦'}
+ if(item.icon&&String(item.icon).startsWith('https://')){const image=document.createElement('img');image.src=item.icon;image.alt=item.title||'صورة الإعلان';imageBox.appendChild(image)}else{imageBox.textContent=item.icon||'📦'}
  const meta=host.querySelector('#detailMeta');
  [ '📍 '+(item.wilaya||'ولاية غير محددة'), item.kind==='exchange'?'• للمقايضة':item.kind==='business'?'• للشركات':'• للبيع', '👤 '+(item.ownerName||'عضو برزني'), '📅 '+date, '👁️ المشاهدات: '+Math.max(0,Number(item.views)||0) ].forEach(value=>{const span=document.createElement('span');span.textContent=value;meta.appendChild(span)});
  const actions=host.querySelector('#detailActions');
