@@ -106,5 +106,142 @@ window.berzniFirebase = {
   }
 };
 
+// ===== BerzNi: رفع آمن للصور =====
+// ضع هذه الكتلة كما هي في firebase.js مباشرة قبل السطر:
+//   document.dispatchEvent(new Event("berzni-firebase-ready"));
+// لا تحذف أي شيء آخر. هذه الكتلة تستبدل uploadListingImage عند التشغيل.
+(() => {
+  const MAX_BYTES = 5 * 1024 * 1024;       // الحد الأقصى بعد المعالجة
+  const MAX_INPUT_PIXELS = 40e6;           // حماية من الصور الضخمة (ذاكرة الهاتف)
+  const CLOUD_NAME = "wiq0fgyr";
+  const UPLOAD_PRESET = "berzni_upload";
+  const UPLOAD_URL = "https://api.cloudinary.com/v1_1/" + CLOUD_NAME + "/image/upload";
+  const URL_PREFIX = "https://res.cloudinary.com/" + CLOUD_NAME + "/";
+  const TIMEOUT_MS = 45000;
+  const ATTEMPTS = [
+    { side: 1400, q: 0.78 }, { side: 1400, q: 0.65 }, { side: 1200, q: 0.55 },
+    { side: 1000, q: 0.5 }, { side: 800, q: 0.45 }
+  ];
+  const fail = (m) => { throw new Error(m); };
+
+  const readBytes = (blob) => typeof blob.arrayBuffer === "function"
+    ? blob.arrayBuffer()
+    : new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = () => rej(new Error("read"));
+        r.readAsArrayBuffer(blob);
+      });
+  const ascii = (b, from, to) => String.fromCharCode.apply(null, Array.from(b.slice(from, to)));
+
+  // نوع الصورة الحقيقي من أول بايتات الملف (وليس من الامتداد أو file.type)
+  const sniff = (b) => {
+    if (b.length >= 3 && b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return "image/jpeg";
+    if (b.length >= 8 && b[0] === 0x89 && ascii(b, 1, 4) === "PNG" && b[4] === 0x0D && b[5] === 0x0A && b[6] === 0x1A && b[7] === 0x0A) return "image/png";
+    if (b.length >= 12 && ascii(b, 0, 4) === "RIFF" && ascii(b, 8, 12) === "WEBP") return "image/webp";
+    return null;
+  };
+  const headOf = async (blob) => new Uint8Array(await readBytes(blob.slice(0, 16)));
+
+  // فك ترميز حقيقي للصورة؛ أي فشل = رفض
+  const decode = async (file) => {
+    if (typeof createImageBitmap === "function") {
+      try {
+        const bmp = await createImageBitmap(file);
+        return { src: bmp, w: bmp.width, h: bmp.height, free: () => { try { bmp.close(); } catch (e) {} } };
+      } catch (e) { /* نجرب الطريقة البديلة أدناه */ }
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      img.src = url;
+      await Promise.race([
+        new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error("decode")); }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("decode-timeout")), 15000))
+      ]);
+      return { src: img, w: img.naturalWidth, h: img.naturalHeight, free: () => URL.revokeObjectURL(url) };
+    } catch (e) {
+      URL.revokeObjectURL(url);
+      throw e;
+    }
+  };
+
+  const encode = (canvas, q) => new Promise((res, rej) => {
+    canvas.toBlob((b) => (b ? res(b) : rej(new Error("encode"))), "image/jpeg", q);
+  });
+
+  // يتحقق من الصورة ويعيد ترميزها JPEG نظيفاً؛ أي فشل = رفض نهائي (لا رجوع للملف الأصلي)
+  async function prepare(file) {
+    if (!file || typeof file.size !== "number" || typeof file.slice !== "function") fail("لم يتم اختيار صورة صالحة.");
+    if (file.size === 0) fail("الملف فارغ.");
+    if (file.size > MAX_BYTES) fail("حجم الصورة يتجاوز 5 ميغابايت.");
+    let real = null;
+    try { real = sniff(await headOf(file)); } catch (e) { fail("تعذر قراءة الملف."); }
+    if (!real) fail("الملف ليس صورة JPG أو PNG أو WebP حقيقية.");
+
+    let img;
+    try { img = await decode(file); } catch (e) { fail("تعذر فتح الصورة؛ قد يكون الملف تالفاً أو غير حقيقي."); }
+    try {
+      const w = img.w, h = img.h;
+      if (!(w > 0 && h > 0)) fail("أبعاد الصورة غير صالحة.");
+      if (w * h > MAX_INPUT_PIXELS) fail("أبعاد الصورة كبيرة جداً.");
+      for (const a of ATTEMPTS) {
+        const scale = Math.min(1, a.side / Math.max(w, h));
+        const cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = cw; canvas.height = ch;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) fail("تعذر تجهيز الصورة على هذا الجهاز.");
+        ctx.fillStyle = "#ffffff";            // لتفادي الخلفية السوداء في صور PNG الشفافة
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.drawImage(img.src, 0, 0, cw, ch);
+        let blob;
+        try { blob = await encode(canvas, a.q); } catch (e) { fail("تعذر ضغط الصورة."); }
+        canvas.width = 0; canvas.height = 0;
+        let okType = false;
+        try { okType = blob.type === "image/jpeg" && sniff(await headOf(blob)) === "image/jpeg"; } catch (e) {}
+        if (!okType || !(blob.size > 0)) fail("تعذر ضغط الصورة بصيغة صالحة.");
+        if (blob.size <= MAX_BYTES) return blob;
+      }
+      fail("تعذر خفض حجم الصورة إلى أقل من 5 ميغابايت.");
+    } finally {
+      img.free();
+    }
+  }
+
+  async function upload(blob) {
+    const formData = new FormData();
+    formData.append("file", blob, "berzni-image.jpg");
+    formData.append("upload_preset", UPLOAD_PRESET);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const response = await fetch(UPLOAD_URL, { method: "POST", body: formData, signal: controller.signal });
+      let result = null;
+      try { result = await response.json(); } catch (e) {}
+      if (!response.ok || !result || typeof result.secure_url !== "string") {
+        console.error("Cloudinary upload error:", result);
+        throw new Error((result && result.error && result.error.message) || "فشل رفع الصورة إلى Cloudinary.");
+      }
+      if (result.secure_url.indexOf(URL_PREFIX) !== 0) fail("ردّ غير متوقع من خدمة رفع الصور.");
+      if (typeof result.bytes === "number" && result.bytes > MAX_BYTES) fail("حجم الصورة بعد الرفع يتجاوز 5 ميغابايت.");
+      return result.secure_url;
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        throw new Error("استغرق رفع الصورة أكثر من 45 ثانية. تحقق من الإنترنت ثم أعد المحاولة.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  window.berzniFirebase.uploadListingImage = async (file) => {
+    if (!auth.currentUser) fail("يجب تسجيل الدخول أولاً.");
+    const blob = await prepare(file);
+    return upload(blob);
+  };
+})();
+
 document.dispatchEvent(new Event("berzni-firebase-ready"));
 console.info("BerzNi: Firebase initialized.");
