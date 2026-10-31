@@ -41,10 +41,17 @@ window.berzniFirebase = {
         canvas.height = Math.round(bitmap.height * scale);
         const ctx = canvas.getContext("2d");
         ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        // Preserve PNG transparency; JPEG would turn transparent pixels black.
+        const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
         const compressed = await new Promise((resolve, reject) => {
-          canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("تعذر تجهيز الصورة.")), "image/jpeg", 0.78);
+          canvas.toBlob(
+            blob => blob ? resolve(blob) : reject(new Error("تعذر تجهيز الصورة.")),
+            outputType,
+            outputType === "image/jpeg" ? 0.82 : undefined
+          );
         });
-        uploadFile = new File([compressed], "berzni-image.jpg", { type: "image/jpeg" });
+        const extension = outputType === "image/png" ? "png" : "jpg";
+        uploadFile = new File([compressed], `berzni-image.${extension}`, { type: outputType });
       }
       bitmap.close();
     } catch (compressionError) {
