@@ -96,37 +96,31 @@ function registerListingView(item){
  }).catch(err=>{try{localStorage.removeItem(key)}catch(e){};console.warn("Listing view count:",err)});
 }
 async function showListingDetail(id){
- const host=document.getElementById("listingDetail"),main=document.querySelector("main"),token=++detailRequestToken;
+ const host=document.getElementById('listingDetail'),main=document.querySelector('main'),token=++detailRequestToken;
  main.hidden=true;host.hidden=false;host.innerHTML='<div class="detail-status">جارٍ تحميل تفاصيل الإعلان...</div>';
  let item=allListings().find(x=>x.id===id);
- if(!item&&window.berzniFirebase){try{item=await window.berzniFirebase.getListing(id)}catch(err){console.error("Listing detail:",err)}}
+ if(!item&&window.berzniFirebase){try{item=await window.berzniFirebase.getListing(id)}catch(err){console.error('Listing detail:',err)}}
  if(token!==detailRequestToken)return;
- if(!item){host.innerHTML='<div class="detail-status"><h2>الإعلان غير متاح</h2><p>ربما تم حذف الإعلان أو أن الرابط غير صحيح.</p><button class="btn primary" onclick="closeListingDetail()">العودة إلى السوق</button></div>';return}
- const raw=String(item.whatsapp||"").trim().replace(/[\s().-]/g,"");let phone=raw.replace(/[^0-9+]/g,"");if(phone.startsWith("00"))phone=phone.slice(2);if(phone.startsWith("+"))phone=phone.slice(1);if(phone.startsWith("0"))phone="213"+phone.slice(1);else if(!phone.startsWith("213")&&phone.length===9)phone="213"+phone;
- const wa=/^213[5-7][0-9]{8}$/.test(phone)?phone:"";
+ if(!item){host.innerHTML='<div class="detail-status"><h2>الإعلان غير متاح</h2><p>ربما تم حذف الإعلان أو أن الرابط غير صحيح.</p><button class="btn primary" id="detailBack">العودة إلى السوق</button></div>';host.querySelector('#detailBack').addEventListener('click',closeListingDetail);return}
+ const raw=String(item.whatsapp||'').trim().replace(/[\\s().-]/g,'');let phone=raw.replace(/[^0-9+]/g,'');
+ if(phone.startsWith('00'))phone=phone.slice(2);if(phone.startsWith('+'))phone=phone.slice(1);if(phone.startsWith('0'))phone='213'+phone.slice(1);else if(!phone.startsWith('213')&&phone.length===9)phone='213'+phone;
+ const wa=/^213[5-7][0-9]{8}$/.test(phone)?phone:'';
  if(!(currentUser&&item.ownerUid===currentUser.uid))registerListingView(item);
- const date=listingTime(item)?new Date(listingTime(item)).toLocaleDateString("ar-DZ",{year:"numeric",month:"long",day:"numeric"}):"غير محدد";
- host.innerHTML = `<div style="margin-bottom:14px"><button class="btn light" onclick="closeListingDetail()">← العودة إلى الإعلانات</button></div>
-<article class="detail-card">
-<div class="detail-image">${listingImageMarkup(item)}</div>
-<div class="detail-content">
-<div class="price">${escapeHTML(item.price||"السعر غير محدد")}</div>
-<h1>${escapeHTML(item.title||"إعلان برزني")}</h1>
-<div class="detail-meta">
-<span>📍 ${escapeHTML(item.wilaya||"ولاية غير محددة")}</span>
-<span>• ${item.kind==="exchange"?"للمقايضة":item.kind==="business"?"للشركات":"للبيع"}</span>
-<span>👤 ${escapeHTML(item.ownerName||"عضو برزني")}</span>
-<span>📅 ${date}</span>
-<span class="views-count" data-listing-views="${escapeHTML(item.id)}">👁️ المشاهدات: ${Math.max(0,Number(item.views)||0)}</span>
-</div>
-<h3>تفاصيل الإعلان</h3>
-<div class="detail-description">${escapeHTML(item.description||"لم يضف صاحب الإعلان وصفاً.")}</div>
-<div class="detail-actions">
-${wa?'<a class="btn primary" style="background:#168b55;color:white" href="https://wa.me/'+wa+'" target="_blank" rel="noopener">تواصل عبر واتساب</a>':""}
-<button class="favorite-toggle ${isFavorite(item.id)?"saved":""}" onclick="toggleFavorite(&quot;${escapeHTML(item.id)}&quot;)">${isFavorite(item.id)?"♥ محفوظ في المفضلة":"♡ أضف إلى المفضلة"}</button>
-<button class="btn light" onclick="shareListing()">مشاركة الإعلان ↗</button>
-${isSiteAdmin()?'<button class="btn light" style="color:#b42318" onclick="deleteListing(&quot;'+escapeHTML(item.id)+'&quot;)">حذف الإعلان</button>':""}
-</div></div></article>`;
+ const date=listingTime(item)?new Date(listingTime(item)).toLocaleDateString('ar-DZ',{year:'numeric',month:'long',day:'numeric'}):'غير محدد';
+ host.innerHTML='<div style="margin-bottom:14px"><button class="btn light" id="detailBack">← العودة إلى الإعلانات</button></div><article class="detail-card"><div class="detail-image" id="detailImage"></div><div class="detail-content"><div class="price" id="detailPrice"></div><h1 id="detailTitle"></h1><div class="detail-meta" id="detailMeta"></div><h3>تفاصيل الإعلان</h3><div class="detail-description" id="detailDescription"></div><div class="detail-actions" id="detailActions"></div></div></article>';
+ host.querySelector('#detailBack').addEventListener('click',closeListingDetail);
+ host.querySelector('#detailPrice').textContent=item.price||'السعر غير محدد';
+ host.querySelector('#detailTitle').textContent=item.title||'إعلان برزني';
+ host.querySelector('#detailDescription').textContent=item.description||'لم يضف صاحب الإعلان وصفاً.';
+ const imageBox=host.querySelector('#detailImage');
+ if(item.icon&&/^https:\\/\\//.test(item.icon)){const image=document.createElement('img');image.src=item.icon;image.alt=item.title||'صورة الإعلان';imageBox.appendChild(image)}else{imageBox.textContent=item.icon||'📦'}
+ const meta=host.querySelector('#detailMeta');
+ [ '📍 '+(item.wilaya||'ولاية غير محددة'), item.kind==='exchange'?'• للمقايضة':item.kind==='business'?'• للشركات':'• للبيع', '👤 '+(item.ownerName||'عضو برزني'), '📅 '+date, '👁️ المشاهدات: '+Math.max(0,Number(item.views)||0) ].forEach(value=>{const span=document.createElement('span');span.textContent=value;meta.appendChild(span)});
+ const actions=host.querySelector('#detailActions');
+ if(wa){const link=document.createElement('a');link.className='btn primary';link.style.cssText='background:#168b55;color:white';link.href='https://wa.me/'+wa;link.target='_blank';link.rel='noopener';link.textContent='تواصل عبر واتساب';actions.appendChild(link)}
+ const favorite=document.createElement('button');favorite.className='favorite-toggle '+(isFavorite(item.id)?'saved':'');favorite.textContent=isFavorite(item.id)?'♥ محفوظ في المفضلة':'♡ أضف إلى المفضلة';favorite.addEventListener('click',()=>toggleFavorite(item.id));actions.appendChild(favorite);
+ const share=document.createElement('button');share.className='btn light';share.textContent='مشاركة الإعلان ↗';share.addEventListener('click',shareListing);actions.appendChild(share);
+ if(isSiteAdmin()){const remove=document.createElement('button');remove.className='btn light';remove.style.color='#b42318';remove.textContent='حذف الإعلان';remove.addEventListener('click',()=>deleteListing(item.id));actions.appendChild(remove)}
 }
 function openImageZoom(src,alt){
  const overlay=document.createElement("div");
