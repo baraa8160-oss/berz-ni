@@ -211,10 +211,39 @@ async function loadAllListings(){if(!moreListingsAvailable||loadingMoreListings|
 
 // ===== إشهار المحلات والشركات بموافقة المدير =====
 let approvedBusinessAds=[],businessAdIndex=0,businessAdTimer=null;
+let businessMotionFrame=0,businessMotionX=14,businessMotionY=105,businessMotionVX=0.19,businessMotionVY=0.15,businessMotionLast=0,businessMotionPaused=false;
+function startBusinessAdMotion(){
+ const box=document.getElementById("businessFloat");
+ if(!box||businessMotionFrame||!box.classList.contains("show"))return;
+ const small=window.innerWidth<=520;
+ businessMotionX=Math.max(10,Math.min(businessMotionX,window.innerWidth-box.offsetWidth-10));
+ businessMotionY=Math.max(small?88:10,Math.min(businessMotionY,window.innerHeight-box.offsetHeight-10));
+ box.style.left=businessMotionX+"px";box.style.top=businessMotionY+"px";box.style.right="auto";
+ const move=(now)=>{
+  if(!box.isConnected||!box.classList.contains("show")){businessMotionFrame=0;return}
+  const dt=businessMotionLast?Math.min(32,now-businessMotionLast):16;businessMotionLast=now;
+  if(!businessMotionPaused&&!document.hidden){
+   const maxX=Math.max(10,window.innerWidth-box.offsetWidth-10),maxY=Math.max(10,window.innerHeight-box.offsetHeight-10);
+   businessMotionX+=businessMotionVX*dt;businessMotionY+=businessMotionVY*dt;
+   if(businessMotionX<=10){businessMotionX=10;businessMotionVX=Math.abs(businessMotionVX)}
+   if(businessMotionX>=maxX){businessMotionX=maxX;businessMotionVX=-Math.abs(businessMotionVX)}
+   if(businessMotionY<=10){businessMotionY=10;businessMotionVY=Math.abs(businessMotionVY)}
+   if(businessMotionY>=maxY){businessMotionY=maxY;businessMotionVY=-Math.abs(businessMotionVY)}
+   box.style.left=businessMotionX+"px";box.style.top=businessMotionY+"px";
+  }
+  businessMotionFrame=requestAnimationFrame(move);
+ };
+ box.addEventListener("pointerenter",()=>businessMotionPaused=true);
+ box.addEventListener("pointerleave",()=>businessMotionPaused=false);
+ box.addEventListener("pointerdown",()=>businessMotionPaused=true);
+ window.addEventListener("pointerup",()=>businessMotionPaused=false);
+ window.addEventListener("resize",()=>{businessMotionX=Math.max(10,Math.min(businessMotionX,window.innerWidth-box.offsetWidth-10));businessMotionY=Math.max(10,Math.min(businessMotionY,window.innerHeight-box.offsetHeight-10))});
+ businessMotionFrame=requestAnimationFrame(move);
+}
 function openBusinessRequest(){if(!currentUser){openAuth();document.getElementById("authMessage").textContent="سجّل الدخول أولاً لإرسال طلب إشهار نشاطك.";return}document.getElementById("businessRequestModal").classList.add("show")}
 function closeBusinessRequest(){document.getElementById("businessRequestModal").classList.remove("show")}
 function businessWhatsApp(value){let p=String(value||"").replace(/[^0-9+]/g,"");if(p.startsWith("00"))p=p.slice(2);if(p.startsWith("+"))p=p.slice(1);if(p.startsWith("0"))p="213"+p.slice(1);else if(!p.startsWith("213")&&p.length===9)p="213"+p;return /^213[5-7][0-9]{8}$/.test(p)?p:""}
-function showBusinessAd(){const box=document.getElementById("businessFloat"),content=document.getElementById("businessFloatContent");if(!box||!content||!approvedBusinessAds.length||sessionStorage.getItem("berzni_hide_business_ads")==="1"){if(box)box.classList.remove("show");return}const ad=approvedBusinessAds[businessAdIndex%approvedBusinessAds.length];const phone=businessWhatsApp(ad.phone);content.innerHTML=(ad.imageUrl?'<img src="'+escapeHTML(ad.imageUrl)+'" alt="'+escapeHTML(ad.name)+'">':'')+'<div class="business-float-body"><div class="business-float-tag">إشهار مجاني معتمد • '+escapeHTML(ad.wilaya)+'</div><h3>'+escapeHTML(ad.name)+'</h3><div style="font-size:12px;color:#1d5b9e;font-weight:bold">'+escapeHTML(ad.activity)+'</div><p>'+escapeHTML(ad.description)+'</p>'+(phone?'<div class="business-float-actions"><a href="https://wa.me/'+phone+'" target="_blank" rel="noopener">تواصل عبر واتساب</a></div>':'')+(approvedBusinessAds.length>1?'<div class="business-float-count">'+(businessAdIndex+1)+' / '+approvedBusinessAds.length+'</div>':'')+'</div>';box.classList.add("show")}
+function showBusinessAd(){const box=document.getElementById("businessFloat"),content=document.getElementById("businessFloatContent");if(!box||!content||!approvedBusinessAds.length||sessionStorage.getItem("berzni_hide_business_ads")==="1"){if(box)box.classList.remove("show");return}const ad=approvedBusinessAds[businessAdIndex%approvedBusinessAds.length];const phone=businessWhatsApp(ad.phone);content.innerHTML=(ad.imageUrl?'<img src="'+escapeHTML(ad.imageUrl)+'" alt="'+escapeHTML(ad.name)+'">':'')+'<div class="business-float-body"><div class="business-float-tag">إشهار مجاني معتمد • '+escapeHTML(ad.wilaya)+'</div><h3>'+escapeHTML(ad.name)+'</h3><div style="font-size:12px;color:#1d5b9e;font-weight:bold">'+escapeHTML(ad.activity)+'</div><p>'+escapeHTML(ad.description)+'</p>'+(phone?'<div class="business-float-actions"><a href="https://wa.me/'+phone+'" target="_blank" rel="noopener">تواصل عبر واتساب</a></div>':'')+(approvedBusinessAds.length>1?'<div class="business-float-count">'+(businessAdIndex+1)+' / '+approvedBusinessAds.length+'</div>':'')+'</div>';box.classList.add("show");startBusinessAdMotion()}
 function setApprovedBusinessAds(items){approvedBusinessAds=items||[];businessAdIndex=0;showBusinessAd();if(businessAdTimer)clearInterval(businessAdTimer);if(approvedBusinessAds.length>1)businessAdTimer=setInterval(()=>{if(sessionStorage.getItem("berzni_hide_business_ads")==="1")return;businessAdIndex=(businessAdIndex+1)%approvedBusinessAds.length;showBusinessAd()},9000)}
 document.getElementById("businessFloatClose").addEventListener("click",()=>{sessionStorage.setItem("berzni_hide_business_ads","1");document.getElementById("businessFloat").classList.remove("show")});
 document.getElementById("businessRequestModal").addEventListener("click",e=>{if(e.target.id==="businessRequestModal")closeBusinessRequest()});
