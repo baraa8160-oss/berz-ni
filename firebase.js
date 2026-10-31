@@ -28,8 +28,6 @@ window.berzniFirebase = {
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
       throw new Error("الصورة يجب أن تكون JPG أو PNG أو WebP وألا يتجاوز حجمها 5 ميغابايت.");
     }
-
-    // تصغير الصورة داخل الهاتف قبل إرسالها لتسريع الرفع.
     let uploadFile = file;
     try {
       const bitmap = await createImageBitmap(file);
@@ -41,14 +39,9 @@ window.berzniFirebase = {
         canvas.height = Math.round(bitmap.height * scale);
         const ctx = canvas.getContext("2d");
         ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        // Preserve PNG transparency; JPEG would turn transparent pixels black.
         const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
         const compressed = await new Promise((resolve, reject) => {
-          canvas.toBlob(
-            blob => blob ? resolve(blob) : reject(new Error("تعذر تجهيز الصورة.")),
-            outputType,
-            outputType === "image/jpeg" ? 0.82 : undefined
-          );
+          canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("تعذر تجهيز الصورة.")), outputType, outputType === "image/jpeg" ? 0.82 : undefined);
         });
         const extension = outputType === "image/png" ? "png" : "jpg";
         uploadFile = new File([compressed], `berzni-image.${extension}`, { type: outputType });
@@ -57,18 +50,13 @@ window.berzniFirebase = {
     } catch (compressionError) {
       console.warn("Image compression skipped:", compressionError);
     }
-
     const formData = new FormData();
     formData.append("file", uploadFile);
     formData.append("upload_preset", "berzni_upload");
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 45000);
     try {
-      const response = await fetch("https://api.cloudinary.com/v1_1/wiq0fgyr/image/upload", {
-        method: "POST",
-        body: formData,
-        signal: controller.signal
-      });
+      const response = await fetch("https://api.cloudinary.com/v1_1/wiq0fgyr/image/upload", { method: "POST", body: formData, signal: controller.signal });
       const result = await response.json();
       if (!response.ok || !result.secure_url) {
         console.error("Cloudinary upload error:", result);
@@ -76,9 +64,7 @@ window.berzniFirebase = {
       }
       return result.secure_url;
     } catch (error) {
-      if (error.name === "AbortError") {
-        throw new Error("استغرق رفع الصورة أكثر من 45 ثانية. تحقق من الإنترنت ثم أعد المحاولة.");
-      }
+      if (error.name === "AbortError") throw new Error("استغرق رفع الصورة أكثر من 45 ثانية. تحقق من الإنترنت ثم أعد المحاولة.");
       throw error;
     } finally {
       clearTimeout(timeout);
@@ -90,20 +76,15 @@ window.berzniFirebase = {
   watchAuth: (callback) => onAuthStateChanged(auth, callback),
   getProfile: async () => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); const snap = await getDoc(doc(db, "users", auth.currentUser.uid)); return snap.exists() ? snap.data() : {}; },
   saveProfile: async (profile) => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); return setDoc(doc(db, "users", auth.currentUser.uid), { ...profile, email: auth.currentUser.email || "", updatedAt: serverTimestamp() }, { merge: true }); },
-  publishListing: (item) => addDoc(collection(db, "listings"), {
-    ...item, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp()
-  }),
+  publishListing: (item) => addDoc(collection(db, "listings"), { ...item, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() }),
+  getListing: async (id) => { const snap = await getDoc(doc(db, "listings", id)); return snap.exists() ? { id: snap.id, ...snap.data() } : null; },
   watchListings: (callback, onError) => onSnapshot(
     query(collection(db, "listings"), orderBy("createdAt", "desc"), limit(12)),
     async snapshot => {
-      // A limited live query can report "removed" when a document merely
-      // moves outside the newest 12. Check Firestore before deleting it locally.
-      const removedIds = await Promise.all(snapshot.docChanges()
-        .filter(change => change.type === "removed")
-        .map(async change => {
-          const current = await getDoc(change.doc.ref);
-          return current.exists() ? null : change.doc.id;
-        }));
+      const removedIds = await Promise.all(snapshot.docChanges().filter(change => change.type === "removed").map(async change => {
+        const current = await getDoc(change.doc.ref);
+        return current.exists() ? null : change.doc.id;
+      }));
       callback({
         items: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
         removedIds: removedIds.filter(Boolean),
@@ -115,12 +96,7 @@ window.berzniFirebase = {
   ),
   getMoreListings: async (lastDoc) => {
     if (!lastDoc) return { items: [], lastDoc: null, hasMore: false };
-    const page = await getDocs(query(
-      collection(db, "listings"),
-      orderBy("createdAt", "desc"),
-      startAfter(lastDoc),
-      limit(12)
-    ));
+    const page = await getDocs(query(collection(db, "listings"), orderBy("createdAt", "desc"), startAfter(lastDoc), limit(12)));
     return {
       items: page.docs.map(doc => ({ id: doc.id, ...doc.data() })),
       lastDoc: page.docs[page.docs.length - 1] || lastDoc,
