@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /listings/{listingId} {
+      // Visitors can browse public listings.
+      allow read: if true;
+
+      // A signed-in user can create only listings owned by their own UID.
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid;
+
+      // Only the original owner can edit or delete a listing.
+      // The owner UID cannot be transferred during an update.
+      allow update: if signedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid;
+
+      allow delete: if signedIn()
+        && resource.data.ownerUid == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      // Each user can read and write only their own profile document.
+      allow read, create, update, delete: if signedIn()
+        && request.auth.uid == userId;
+    }
+  }
+}
