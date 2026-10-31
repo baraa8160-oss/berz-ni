@@ -5,7 +5,7 @@ import {
   signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, limit, getDocs, startAfter, doc, getDoc, setDoc, updateDoc, increment
+  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, limit, getDocs, startAfter, doc, getDoc, setDoc, updateDoc, increment, where
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -76,7 +76,7 @@ window.berzniFirebase = {
   watchAuth: (callback) => onAuthStateChanged(auth, callback),
   getProfile: async () => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); const snap = await getDoc(doc(db, "users", auth.currentUser.uid)); return snap.exists() ? snap.data() : {}; },
   saveProfile: async (profile) => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); return setDoc(doc(db, "users", auth.currentUser.uid), { ...profile, email: auth.currentUser.email || "", updatedAt: serverTimestamp() }, { merge: true }); },
-  publishListing: (item) => addDoc(collection(db, "listings"), { ...item, views: 0, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() }),
+  publishListing: (item) => addDoc(collection(db, "listings"), { ...item, views: 0, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() }),\n  submitBusinessAd: (data) => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); return addDoc(collection(db, "businessAds"), { ...data, ownerUid: auth.currentUser.uid, status: "pending", createdAt: serverTimestamp() }); },\n  watchApprovedBusinessAds: (callback) => onSnapshot(query(collection(db, "businessAds"), where("status", "==", "approved")), snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))), err => console.warn("Approved business ads:", err)),\n  watchBusinessRequests: (callback) => onSnapshot(query(collection(db, "businessAds"), where("status", "==", "pending"), orderBy("createdAt", "desc")), snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))), err => console.warn("Business ad requests:", err)),\n  reviewBusinessAd: (id, status) => { if (!auth.currentUser || auth.currentUser.uid !== "9J2v3wl0QfTNx3SHGDp7DnYFvLd2") throw new Error("صلاحية المدير مطلوبة."); if (!["approved", "rejected"].includes(status)) throw new Error("حالة غير صالحة."); return updateDoc(doc(db, "businessAds", id), { status, reviewedAt: serverTimestamp() }); },
   recordListingView: async (id) => { const ref = doc(db, "listings", id); await updateDoc(ref, { views: increment(1) }); const snap = await getDoc(ref); return snap.exists() ? Math.max(0, Number(snap.data().views) || 0) : 0; },
   getListing: async (id) => { const snap = await getDoc(doc(db, "listings", id)); return snap.exists() ? { id: snap.id, ...snap.data() } : null; },
   watchListings: (callback, onError) => onSnapshot(
