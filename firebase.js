@@ -5,7 +5,7 @@ import {
   signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, limit, getDocs, startAfter, doc, getDoc, setDoc, updateDoc, increment, where
+  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, limit, getDocs, startAfter, doc, getDoc, setDoc, updateDoc, increment, where, deleteDoc
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -79,8 +79,9 @@ window.berzniFirebase = {
   publishListing: (item) => addDoc(collection(db, "listings"), { ...item, views: 0, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() }),
   submitBusinessAd: (data) => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); return addDoc(collection(db, "businessAds"), { ...data, ownerUid: auth.currentUser.uid, status: "pending", createdAt: serverTimestamp() }); },
   watchApprovedBusinessAds: (callback) => onSnapshot(query(collection(db, "businessAds"), where("status", "==", "approved")), snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))), err => console.warn("Approved business ads:", err)),
-  watchBusinessRequests: (callback) => onSnapshot(query(collection(db, "businessAds"), where("status", "==", "pending")), snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))), err => console.warn("Business ad requests:", err)),
+  watchBusinessRequests: (callback) => onSnapshot(collection(db, "businessAds"), snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))), err => console.warn("Business ads:", err)),
   reviewBusinessAd: (id, status) => { if (!auth.currentUser || auth.currentUser.uid !== "9J2v3wl0QfTNx3SHGDp7DnYFvLd2") throw new Error("صلاحية المدير مطلوبة."); if (!["approved", "rejected"].includes(status)) throw new Error("حالة غير صالحة."); return updateDoc(doc(db, "businessAds", id), { status, reviewedAt: serverTimestamp() }); },
+  deleteBusinessAd: (id) => { if (!auth.currentUser || auth.currentUser.uid !== "9J2v3wl0QfTNx3SHGDp7DnYFvLd2") throw new Error("صلاحية المدير مطلوبة."); return deleteDoc(doc(db, "businessAds", id)); },
   recordListingView: async (id) => { const ref = doc(db, "listings", id); await updateDoc(ref, { views: increment(1) }); const snap = await getDoc(ref); return snap.exists() ? Math.max(0, Number(snap.data().views) || 0) : 0; },
   getListing: async (id) => { const snap = await getDoc(doc(db, "listings", id)); return snap.exists() ? { id: snap.id, ...snap.data() } : null; },
   watchListings: (callback, onError) => onSnapshot(
