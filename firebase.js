@@ -5,7 +5,7 @@ import {
   signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, limit, getDocs, startAfter, doc, getDoc, setDoc
+  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, limit, getDocs, startAfter, doc, getDoc, setDoc, updateDoc, increment
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -76,7 +76,8 @@ window.berzniFirebase = {
   watchAuth: (callback) => onAuthStateChanged(auth, callback),
   getProfile: async () => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); const snap = await getDoc(doc(db, "users", auth.currentUser.uid)); return snap.exists() ? snap.data() : {}; },
   saveProfile: async (profile) => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); return setDoc(doc(db, "users", auth.currentUser.uid), { ...profile, email: auth.currentUser.email || "", updatedAt: serverTimestamp() }, { merge: true }); },
-  publishListing: (item) => addDoc(collection(db, "listings"), { ...item, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() }),
+  publishListing: (item) => addDoc(collection(db, "listings"), { ...item, views: 0, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() }),
+  recordListingView: async (id) => { const ref = doc(db, "listings", id); await updateDoc(ref, { views: increment(1) }); const snap = await getDoc(ref); return snap.exists() ? Math.max(0, Number(snap.data().views) || 0) : 0; },
   getListing: async (id) => { const snap = await getDoc(doc(db, "listings", id)); return snap.exists() ? { id: snap.id, ...snap.data() } : null; },
   watchListings: (callback, onError) => onSnapshot(
     query(collection(db, "listings"), orderBy("createdAt", "desc"), limit(13)),
