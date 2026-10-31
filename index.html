@@ -211,7 +211,7 @@ async function loadAllListings(){if(!moreListingsAvailable||loadingMoreListings|
 
 // ===== إشهار المحلات والشركات بموافقة المدير =====
 let approvedBusinessAds=[],businessAdIndex=0,businessAdTimer=null,businessAdDismissed=false;
-let businessMotionFrame=0,businessMotionX=14,businessMotionY=105,businessMotionVX=0.14,businessMotionVY=0.11,businessMotionLast=0,businessMotionPaused=false;
+let businessMotionFrame=0,businessMotionX=14,businessMotionY=105,businessMotionVX=0.07,businessMotionVY=0.055,businessMotionLast=0,businessMotionPaused=false;
 function startBusinessAdMotion(){
  const box=document.getElementById("businessFloat");
  if(!box||businessMotionFrame||!box.classList.contains("show"))return;
