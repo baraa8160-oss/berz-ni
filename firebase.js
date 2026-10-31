@@ -79,28 +79,29 @@ window.berzniFirebase = {
   publishListing: (item) => addDoc(collection(db, "listings"), { ...item, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() }),
   getListing: async (id) => { const snap = await getDoc(doc(db, "listings", id)); return snap.exists() ? { id: snap.id, ...snap.data() } : null; },
   watchListings: (callback, onError) => onSnapshot(
-    query(collection(db, "listings"), orderBy("createdAt", "desc"), limit(12)),
+    query(collection(db, "listings"), orderBy("createdAt", "desc"), limit(13)),
     async snapshot => {
       const removedIds = await Promise.all(snapshot.docChanges().filter(change => change.type === "removed").map(async change => {
         const current = await getDoc(change.doc.ref);
         return current.exists() ? null : change.doc.id;
       }));
       callback({
-        items: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+        items: snapshot.docs.slice(0, 12).map(doc => ({ id: doc.id, ...doc.data() })),
         removedIds: removedIds.filter(Boolean),
-        lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
-        hasMore: snapshot.size === 12
+        lastDoc: snapshot.docs[Math.min(snapshot.docs.length, 12) - 1] || null,
+        hasMore: snapshot.size > 12
       });
     },
     onError
   ),
   getMoreListings: async (lastDoc) => {
     if (!lastDoc) return { items: [], lastDoc: null, hasMore: false };
-    const page = await getDocs(query(collection(db, "listings"), orderBy("createdAt", "desc"), startAfter(lastDoc), limit(12)));
+    const page = await getDocs(query(collection(db, "listings"), orderBy("createdAt", "desc"), startAfter(lastDoc), limit(13)));
+    const visibleDocs = page.docs.slice(0, 12);
     return {
-      items: page.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-      lastDoc: page.docs[page.docs.length - 1] || lastDoc,
-      hasMore: page.size === 12
+      items: visibleDocs.map(doc => ({ id: doc.id, ...doc.data() })),
+      lastDoc: visibleDocs[visibleDocs.length - 1] || lastDoc,
+      hasMore: page.size > 12
     };
   }
 };
