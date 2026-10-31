@@ -88,11 +88,22 @@ window.berzniFirebase = {
   }),
   watchListings: (callback, onError) => onSnapshot(
     query(collection(db, "listings"), orderBy("createdAt", "desc"), limit(12)),
-    snapshot => callback({
-      items: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-      lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
-      hasMore: snapshot.size === 12
-    }),
+    async snapshot => {
+      // A limited live query can report "removed" when a document merely
+      // moves outside the newest 12. Check Firestore before deleting it locally.
+      const removedIds = await Promise.all(snapshot.docChanges()
+        .filter(change => change.type === "removed")
+        .map(async change => {
+          const current = await getDoc(change.doc.ref);
+          return current.exists() ? null : change.doc.id;
+        }));
+      callback({
+        items: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+        removedIds: removedIds.filter(Boolean),
+        lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
+        hasMore: snapshot.size === 12
+      });
+    },
     onError
   ),
   getMoreListings: async (lastDoc) => {
