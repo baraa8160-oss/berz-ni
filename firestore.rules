@@ -68,6 +68,28 @@ service cloud.firestore {
         || (signedIn() && resource.data.ownerUid == request.auth.uid);
     }
 
+    match /businessAds/{adId} {
+      // Visitors can only read ads approved by the site administrator.
+      allow read: if resource.data.status == 'approved' || isSiteAdmin();
+      // Signed-in members may submit a request, but cannot approve it themselves.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['name','activity','phone','wilaya','description','imageUrl','ownerUid','status','createdAt'])
+        && request.resource.data.keys().hasAll(['name','activity','phone','wilaya','description','ownerUid','status','createdAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 70
+        && request.resource.data.activity is string && request.resource.data.activity.size() > 0 && request.resource.data.activity.size() <= 70
+        && request.resource.data.phone is string && request.resource.data.phone.size() <= 20
+        && request.resource.data.wilaya is string && request.resource.data.wilaya.size() > 0 && request.resource.data.wilaya.size() <= 50
+        && request.resource.data.description is string && request.resource.data.description.size() <= 500
+        && (!('imageUrl' in request.resource.data) || (request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 2000));
+      allow update: if isSiteAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedAt'])
+        && request.resource.data.status in ['approved','rejected'];
+      allow delete: if isSiteAdmin();
+    }
+
     match /users/{userId} {
       allow read: if signedIn() && request.auth.uid == userId;
       allow create, update: if signedIn()
