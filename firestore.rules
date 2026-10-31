@@ -5,6 +5,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isSiteAdmin() {
+      return signedIn() && request.auth.uid == "9J2v3wl0QfTNx3SHGDp7DnYFvLd2";
+    }
+
     function validListing(data) {
       return data.keys().hasAll([
           'ownerUid', 'createdAt', 'ownerName', 'whatsapp',
@@ -60,8 +64,8 @@ service cloud.firestore {
         && request.resource.data.views == resource.data.get('views', 0) + 1
       );
 
-      allow delete: if signedIn()
-        && resource.data.ownerUid == request.auth.uid;
+      allow delete: if isSiteAdmin()
+        || (signedIn() && resource.data.ownerUid == request.auth.uid);
     }
 
     match /users/{userId} {
