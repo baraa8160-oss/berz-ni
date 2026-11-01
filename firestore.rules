@@ -1,57 +1,78 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function signedIn() {
       return request.auth != null;
     }
 
     function isSiteAdmin() {
-      return signedIn() && request.auth.uid == "9J2v3wl0QfTNx3SHGDp7DnYFvLd2";
+      return signedIn()
+        && request.auth.uid == "9J2v3wl0QfTNx3SHGDp7DnYFvLd2";
     }
 
     function validListing(data) {
       return data.keys().hasAll([
-          'ownerUid', 'createdAt', 'ownerName', 'whatsapp',
-          'title', 'kind', 'price', 'wilaya', 'description', 'icon'
-        ])
-        && data.keys().hasOnly([
-          'ownerUid', 'createdAt', 'ownerName', 'whatsapp',
-          'title', 'kind', 'price', 'wilaya', 'description', 'icon'
-        , 'views'])
-        && data.ownerUid is string
-        && data.createdAt is timestamp
-        && data.ownerName is string && data.ownerName.size() > 0 && data.ownerName.size() <= 50
-        && data.whatsapp is string && data.whatsapp.size() <= 20
-        && data.title is string && data.title.size() > 0 && data.title.size() <= 65
-        && data.kind in ['sale', 'exchange', 'business']
-        && data.price is string && data.price.size() > 0 && data.price.size() <= 80
-        && data.wilaya is string && data.wilaya.size() > 0 && data.wilaya.size() <= 50
-        && data.description is string && data.description.size() <= 2000
-        && data.icon is string && data.icon.size() <= 2000
-        && (!('views' in data) || (data.views is int && data.views >= 0));
+        'ownerUid', 'createdAt', 'ownerName', 'whatsapp',
+        'title', 'kind', 'price', 'wilaya', 'description', 'icon'
+      ])
+      && data.keys().hasOnly([
+        'ownerUid', 'createdAt', 'ownerName', 'whatsapp',
+        'title', 'kind', 'price', 'wilaya', 'description', 'icon',
+        'views'
+      ])
+      && data.ownerUid is string
+      && data.createdAt is timestamp
+      && data.ownerName is string
+      && data.ownerName.size() > 0
+      && data.ownerName.size() <= 50
+      && data.whatsapp is string
+      && data.whatsapp.size() <= 20
+      && data.title is string
+      && data.title.size() > 0
+      && data.title.size() <= 65
+      && data.kind in ['sale', 'exchange', 'business']
+      && data.price is string
+      && data.price.size() > 0
+      && data.price.size() <= 80
+      && data.wilaya is string
+      && data.wilaya.size() > 0
+      && data.wilaya.size() <= 50
+      && data.description is string
+      && data.description.size() <= 2000
+      && data.icon is string
+      && data.icon.size() <= 2000
+      && (!('views' in data) ||
+        (data.views is int && data.views >= 0));
     }
 
     function validProfile(data) {
-      return data.keys().hasAll(['displayName', 'wilaya', 'bio', 'email', 'updatedAt'])
-        && data.keys().hasOnly(['displayName', 'wilaya', 'bio', 'email', 'updatedAt'])
-        && data.displayName is string && data.displayName.size() <= 60
-        && data.wilaya is string && data.wilaya.size() <= 50
-        && data.bio is string && data.bio.size() <= 500
-        && data.email is string && data.email.size() <= 254
-        && data.updatedAt is timestamp;
+      return data.keys().hasAll([
+        'displayName', 'wilaya', 'bio', 'email', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'displayName', 'wilaya', 'bio', 'email', 'updatedAt'
+      ])
+      && data.displayName is string
+      && data.displayName.size() <= 60
+      && data.wilaya is string
+      && data.wilaya.size() <= 50
+      && data.bio is string
+      && data.bio.size() <= 500
+      && data.email is string
+      && data.email.size() <= 254
+      && data.updatedAt is timestamp;
     }
 
     match /listings/{listingId} {
-      // Public listings can be read by visitors.
       allow read: if true;
 
-      // New listings must match the expected schema and belong to the signed-in user.
       allow create: if signedIn()
         && listingId.matches('^[A-Za-z0-9]{20}$')
+        && validListing(request.resource.data)
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.createdAt == request.time;
 
-      // Owners may edit listing fields, but cannot transfer ownership or alter creation time.
       allow update: if (
         signedIn()
         && resource.data.ownerUid == request.auth.uid
@@ -69,167 +90,58 @@ service cloud.firestore {
     }
 
     match /businessAds/{adId} {
-      // Visitors can only read ads approved by the site administrator.
-      allow read: if resource.data.status == 'approved' || isSiteAdmin();
-      // Signed-in members may submit a request, but cannot approve it themselves.
+      allow read: if resource.data.status == 'approved'
+        || isSiteAdmin();
+
       allow create: if signedIn()
         && adId.matches('^[A-Za-z0-9]{20}$')
-        && request.resource.data.keys().hasAll(['name','activity','phone','wilaya','description','ownerUid','status','createdAt'])
+        && request.resource.data.keys().hasAll([
+          'name', 'activity', 'phone', 'wilaya',
+          'description', 'ownerUid', 'status', 'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'name', 'activity', 'phone', 'wilaya',
+          'description', 'imageUrl', 'ownerUid', 'status', 'createdAt'
+        ])
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.status == 'pending'
         && request.resource.data.createdAt == request.time
-        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 70
-        && request.resource.data.activity is string && request.resource.data.activity.size() > 0 && request.resource.data.activity.size() <= 70
-        && request.resource.data.phone is string && request.resource.data.phone.size() <= 20
-        && request.resource.data.wilaya is string && request.resource.data.wilaya.size() > 0 && request.resource.data.wilaya.size() <= 50
-        && request.resource.data.description is string && request.resource.data.description.size() <= 500
-        && (!('imageUrl' in request.resource.data) || (request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 2000));
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 70
+        && request.resource.data.activity is string
+        && request.resource.data.activity.size() > 0
+        && request.resource.data.activity.size() <= 70
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() <= 20
+        && request.resource.data.wilaya is string
+        && request.resource.data.wilaya.size() > 0
+        && request.resource.data.wilaya.size() <= 50
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 500
+        && (!('imageUrl' in request.resource.data) ||
+          (request.resource.data.imageUrl is string
+          && request.resource.data.imageUrl.size() <= 2000));
+
       allow update: if isSiteAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedAt'])
-        && request.resource.data.status in ['approved','rejected'];
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'reviewedAt'])
+        && request.resource.data.status in ['approved', 'rejected'];
+
       allow delete: if isSiteAdmin();
     }
 
     match /users/{userId} {
-      allow read: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn()
+        && request.auth.uid == userId;
+
       allow create, update: if signedIn()
         && request.auth.uid == userId
         && validProfile(request.resource.data)
         && request.resource.data.updatedAt == request.time;
-      allow delete: if signedIn() && request.auth.uid == userId;
-    }
-  }
-})
-        && validListing(request.resource.data)
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.createdAt == request.time;
 
-      // Owners may edit listing fields, but cannot transfer ownership or alter creation time.
-      allow update: if (
-        signedIn()
-        && resource.data.ownerUid == request.auth.uid
-        && validListing(request.resource.data)
-        && request.resource.data.ownerUid == resource.data.ownerUid
-        && request.resource.data.createdAt == resource.data.createdAt
-      ) || (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
-        && request.resource.data.views is int
-        && request.resource.data.views == resource.data.get('views', 0) + 1
-      );
-
-      allow delete: if isSiteAdmin()
-        || (signedIn() && resource.data.ownerUid == request.auth.uid);
-    }
-
-    match /businessAds/{adId} {
-      // Visitors can only read ads approved by the site administrator.
-      allow read: if resource.data.status == 'approved' || isSiteAdmin();
-      // Signed-in members may submit a request, but cannot approve it themselves.
-      allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(['name','activity','phone','wilaya','description','imageUrl','ownerUid','status','createdAt'])
-        && request.resource.data.keys().hasAll(['name','activity','phone','wilaya','description','ownerUid','status','createdAt'])
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.status == 'pending'
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 70
-        && request.resource.data.activity is string && request.resource.data.activity.size() > 0 && request.resource.data.activity.size() <= 70
-        && request.resource.data.phone is string && request.resource.data.phone.size() <= 20
-        && request.resource.data.wilaya is string && request.resource.data.wilaya.size() > 0 && request.resource.data.wilaya.size() <= 50
-        && request.resource.data.description is string && request.resource.data.description.size() <= 500
-        && (!('imageUrl' in request.resource.data) || (request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 2000));
-      allow update: if isSiteAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedAt'])
-        && request.resource.data.status in ['approved','rejected'];
-      allow delete: if isSiteAdmin();
-    }
-
-    match /users/{userId} {
-      allow read: if signedIn() && request.auth.uid == userId;
-      allow create, update: if signedIn()
-        && request.auth.uid == userId
-        && validProfile(request.resource.data)
-        && request.resource.data.updatedAt == request.time;
-      allow delete: if signedIn() && request.auth.uid == userId;
-    }
-  }
-})
-        && request.resource.data.keys().hasOnly(['name','activity','phone','wilaya','description','imageUrl','ownerUid','status','createdAt'])
-        && request.resource.data.keys().hasAll(['name','activity','phone','wilaya','description','ownerUid','status','createdAt'])
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.status == 'pending'
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 70
-        && request.resource.data.activity is string && request.resource.data.activity.size() > 0 && request.resource.data.activity.size() <= 70
-        && request.resource.data.phone is string && request.resource.data.phone.size() <= 20
-        && request.resource.data.wilaya is string && request.resource.data.wilaya.size() > 0 && request.resource.data.wilaya.size() <= 50
-        && request.resource.data.description is string && request.resource.data.description.size() <= 500
-        && (!('imageUrl' in request.resource.data) || (request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 2000));
-      allow update: if isSiteAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedAt'])
-        && request.resource.data.status in ['approved','rejected'];
-      allow delete: if isSiteAdmin();
-    }
-
-    match /users/{userId} {
-      allow read: if signedIn() && request.auth.uid == userId;
-      allow create, update: if signedIn()
-        && request.auth.uid == userId
-        && validProfile(request.resource.data)
-        && request.resource.data.updatedAt == request.time;
-      allow delete: if signedIn() && request.auth.uid == userId;
-    }
-  }
-})
-        && validListing(request.resource.data)
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.createdAt == request.time;
-
-      // Owners may edit listing fields, but cannot transfer ownership or alter creation time.
-      allow update: if (
-        signedIn()
-        && resource.data.ownerUid == request.auth.uid
-        && validListing(request.resource.data)
-        && request.resource.data.ownerUid == resource.data.ownerUid
-        && request.resource.data.createdAt == resource.data.createdAt
-      ) || (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
-        && request.resource.data.views is int
-        && request.resource.data.views == resource.data.get('views', 0) + 1
-      );
-
-      allow delete: if isSiteAdmin()
-        || (signedIn() && resource.data.ownerUid == request.auth.uid);
-    }
-
-    match /businessAds/{adId} {
-      // Visitors can only read ads approved by the site administrator.
-      allow read: if resource.data.status == 'approved' || isSiteAdmin();
-      // Signed-in members may submit a request, but cannot approve it themselves.
-      allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(['name','activity','phone','wilaya','description','imageUrl','ownerUid','status','createdAt'])
-        && request.resource.data.keys().hasAll(['name','activity','phone','wilaya','description','ownerUid','status','createdAt'])
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.status == 'pending'
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 70
-        && request.resource.data.activity is string && request.resource.data.activity.size() > 0 && request.resource.data.activity.size() <= 70
-        && request.resource.data.phone is string && request.resource.data.phone.size() <= 20
-        && request.resource.data.wilaya is string && request.resource.data.wilaya.size() > 0 && request.resource.data.wilaya.size() <= 50
-        && request.resource.data.description is string && request.resource.data.description.size() <= 500
-        && (!('imageUrl' in request.resource.data) || (request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 2000));
-      allow update: if isSiteAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedAt'])
-        && request.resource.data.status in ['approved','rejected'];
-      allow delete: if isSiteAdmin();
-    }
-
-    match /users/{userId} {
-      allow read: if signedIn() && request.auth.uid == userId;
-      allow create, update: if signedIn()
-        && request.auth.uid == userId
-        && validProfile(request.resource.data)
-        && request.resource.data.updatedAt == request.time;
-      allow delete: if signedIn() && request.auth.uid == userId;
+      allow delete: if signedIn()
+        && request.auth.uid == userId;
     }
   }
 }
