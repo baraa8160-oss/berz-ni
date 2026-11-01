@@ -11,6 +11,11 @@ service cloud.firestore {
         && request.auth.uid == "9J2v3wl0QfTNx3SHGDp7DnYFvLd2";
     }
 
+    function validCloudinaryImageUrl(value) {
+      return value is string
+        && value.matches('^https://res\\.cloudinary\\.com/wiq0fgyr/image/upload/.*$');
+    }
+
     function validListing(data) {
       return data.keys().hasAll([
         'ownerUid', 'createdAt', 'ownerName', 'whatsapp',
@@ -42,6 +47,7 @@ service cloud.firestore {
       && data.description.size() <= 2000
       && data.icon is string
       && data.icon.size() <= 2000
+      && (!data.icon.matches('^https?://.*') || validCloudinaryImageUrl(data.icon))
       && (!('views' in data) ||
         (data.views is int && data.views >= 0));
     }
@@ -121,7 +127,8 @@ service cloud.firestore {
         && request.resource.data.description.size() <= 500
         && (!('imageUrl' in request.resource.data) ||
           (request.resource.data.imageUrl is string
-          && request.resource.data.imageUrl.size() <= 2000));
+          && request.resource.data.imageUrl.size() <= 2000
+          && (request.resource.data.imageUrl == '' || validCloudinaryImageUrl(request.resource.data.imageUrl))));
 
       allow update: if isSiteAdmin()
         && request.resource.data.diff(resource.data).affectedKeys()
