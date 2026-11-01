@@ -1,7 +1,7 @@
 // Firebase connection for BerzNi
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import {
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail,
   signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
@@ -72,6 +72,7 @@ window.berzniFirebase = {
   },
   createAccount: (email, password) => createUserWithEmailAndPassword(auth, email, password),
   login: (email, password) => signInWithEmailAndPassword(auth, email, password),
+  resetPassword: (email) => sendPasswordResetEmail(auth, email),
   logout: () => signOut(auth),
   watchAuth: (callback) => onAuthStateChanged(auth, callback),
   getProfile: async () => { if (!auth.currentUser) throw new Error("سجّل الدخول أولاً."); const snap = await getDoc(doc(db, "users", auth.currentUser.uid)); return snap.exists() ? snap.data() : {}; },
