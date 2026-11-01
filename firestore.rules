@@ -47,7 +47,7 @@ service cloud.firestore {
 
       // New listings must match the expected schema and belong to the signed-in user.
       allow create: if signedIn()
-        && listingId.matches('^[A-Za-z0-9]{20}
+        && listingId.matches('^[A-Za-z0-9]{20}$')
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.createdAt == request.time;
 
@@ -73,7 +73,7 @@ service cloud.firestore {
       allow read: if resource.data.status == 'approved' || isSiteAdmin();
       // Signed-in members may submit a request, but cannot approve it themselves.
       allow create: if signedIn()
-        && adId.matches('^[A-Za-z0-9]{20}(['name','activity','phone','wilaya','description','imageUrl','ownerUid','status','createdAt'])
+        && adId.matches('^[A-Za-z0-9]{20}$')
         && request.resource.data.keys().hasAll(['name','activity','phone','wilaya','description','ownerUid','status','createdAt'])
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.status == 'pending'
