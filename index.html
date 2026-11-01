@@ -12,7 +12,7 @@
 .top{background:var(--navy);color:#fff;padding:8px 5%;font-size:13px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 header{background:linear-gradient(rgba(255,255,255,.30),rgba(255,255,255,.30)),url('./MENNAD.png') center/cover no-repeat;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--silver);isolation:isolate}
 @keyframes mennadBlink{0%,100%{opacity:1}50%{opacity:.12}}
-header::after{content:'MENNAD';position:absolute;left:8%;top:8%;z-index:1;pointer-events:none;font-family:Georgia,'Times New Roman',serif;font-size:clamp(17px,4.5vw,25px);font-weight:500;letter-spacing:2px;color:#fff;text-shadow:0 1px 0 #eef3f8,1px 0 0 #9ca9b8,-1px 0 0 #9ca9b8,0 -1px 0 #9ca9b8,0 2px 5px #07182c;white-space:nowrap;animation: mennadBlink 1.8s ease-in-out infinite}
+.mennad-link{position:absolute;left:8%;top:8%;z-index:6;display:inline-block;font-family:Georgia,'Times New Roman',serif;font-size:clamp(17px,4.5vw,25px);font-weight:500;letter-spacing:2px;color:#fff;text-decoration:none;text-shadow:0 1px 0 #eef3f8,1px 0 0 #9ca9b8,-1px 0 0 #9ca9b8,0 -1px 0 #9ca9b8,0 2px 5px #07182c;white-space:nowrap;animation:mennadBlink 1.8s ease-in-out infinite;cursor:pointer;-webkit-tap-highlight-color:transparent}.mennad-link:focus-visible{outline:2px solid #fff;outline-offset:5px;border-radius:4px}
 .head{position:relative;z-index:2;max-width:1180px;margin:auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
 .brand{display:flex;align-items:flex-start;gap:10px;color:var(--navy);text-decoration:none;flex-wrap:wrap}.brand-copy{display:block;flex:1;min-width:0}.logo{width:45px;height:45px;border-radius:14px;background:linear-gradient(145deg,#15375f,#3985c6);display:grid;place-items:center;color:white;font-weight:bold;font-size:21px}.brand strong{font-size:23px}.brand small{display:block;color:var(--muted);font-size:11px}
 nav{display:flex;gap:17px;flex-wrap:wrap}nav a{color:#40536a;text-decoration:none;font-size:14px;font-weight:600}
@@ -37,7 +37,7 @@ footer{margin-top:55px;background:#0d2441;color:#d8e4f1;padding:30px 22px}.foot{
 </head>
 <body>
 <div class="top"><span>🇩🇿 منصة جزائرية تجمع بين العرض والطلب</span><span>بيع • شراء • مقايضة</span></div>
-<header><div class="head">
+<header><a class="mennad-link" href="https://www.facebook.com/share/1CKfZhunkS/" aria-label="افتح صفحة Facebook" title="افتح Facebook">MENNAD</a><div class="head">
 <a class="brand" href="#"><span class="logo">ب</span><span class="brand-copy"><strong>BerzNi</strong><small>سوقك الذكي للبيع والشراء والمقايضة</small></span></a>
 <nav><a href="#market">السوق</a><a href="#business">سوق الشركات</a><a href="#how">كيف يعمل؟</a></nav>
 <div class="head-actions"><button class="btn light" id="authButton" onclick="handleAuthButton()">دخول</button><button class="btn light" id="profileButton" onclick="openProfile()" hidden>حسابي</button><button class="btn light business-request-btn" onclick="openBusinessRequest()">أعلن عن نشاطك</button><button class="btn primary" onclick="openModal()">أضف إعلانك</button></div>
