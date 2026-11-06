@@ -146,7 +146,13 @@ service cloud.firestore {
           && request.auth.uid in resource.data.participants;
       }
 
-      allow read: if isChatParticipant();
+      // السماح بفحص معرف محادثة غير موجود عند إنشاء محادثة جديدة
+      allow get: if signedIn()
+        && (!exists(/databases/$(database)/documents/chats/$(chatId))
+          || isChatParticipant());
+
+      // عرض المحادثات الموجودة للمشاركين فيها فقط
+      allow list: if isChatParticipant();
 
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly([
