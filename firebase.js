@@ -5,7 +5,7 @@ import {
   signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, limit, getDocs, startAfter, doc, getDoc, setDoc, updateDoc, increment, where, deleteDoc
+  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, limit, getDocs, startAfter, doc, getDoc, setDoc, updateDoc, increment, where, deleteDoc, writeBatch
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -85,6 +85,67 @@ window.berzniFirebase = {
   deleteBusinessAd: (id) => { if (!auth.currentUser || auth.currentUser.uid !== "9J2v3wl0QfTNx3SHGDp7DnYFvLd2") throw new Error("صلاحية المدير مطلوبة."); return deleteDoc(doc(db, "businessAds", id)); },
   recordListingView: async (id) => { const ref = doc(db, "listings", id); await updateDoc(ref, { views: increment(1) }); const snap = await getDoc(ref); return snap.exists() ? Math.max(0, Number(snap.data().views) || 0) : 0; },
   getListing: async (id) => { const snap = await getDoc(doc(db, "listings", id)); return snap.exists() ? { id: snap.id, ...snap.data() } : null; },
+
+  openOrCreateChat: async (listingId) => {
+    if (!auth.currentUser) throw new Error("سجّل الدخول أولاً.");
+    const listingSnap = await getDoc(doc(db, "listings", listingId));
+    if (!listingSnap.exists()) throw new Error("هذا الإعلان غير متاح.");
+    const listing = listingSnap.data();
+    const uid = auth.currentUser.uid;
+    const sellerUid = listing.ownerUid;
+    if (!sellerUid || sellerUid === uid) throw new Error("لا يمكنك التفاوض مع نفسك.");
+    const chatId = listingId + "_" + uid;
+    const chatRef = doc(db, "chats", chatId);
+    const existing = await getDoc(chatRef);
+    if (existing.exists()) {
+      if (!Array.isArray(existing.data().participants) || !existing.data().participants.includes(uid) || !existing.data().participants.includes(sellerUid)) throw new Error("تعذر فتح هذه المحادثة.");
+      return { id: chatId, ...existing.data(), listingTitle: listing.title || "إعلان برزني" };
+    }
+    const batch = writeBatch(db);
+    batch.set(chatRef, {
+      listingId, buyerUid: uid, sellerUid,
+      participants: [uid, sellerUid],
+      createdAt: serverTimestamp(),
+      lastMessage: "",
+      lastMessageAt: serverTimestamp(),
+      lastSenderUid: uid
+    });
+    await batch.commit();
+    return { id: chatId, listingId, buyerUid: uid, sellerUid, participants: [uid, sellerUid], listingTitle: listing.title || "إعلان برزني" };
+  },
+  sendChatMessage: async (chatId, text, offerPrice) => {
+    if (!auth.currentUser) throw new Error("سجّل الدخول أولاً.");
+    const uid = auth.currentUser.uid;
+    const chatRef = doc(db, "chats", chatId);
+    const chatSnap = await getDoc(chatRef);
+    if (!chatSnap.exists() || !chatSnap.data().participants?.includes(uid)) throw new Error("هذه المحادثة غير متاحة.");
+    const isOffer = typeof offerPrice === "string" && offerPrice.trim().length > 0;
+    const cleanText = String(text || "").trim();
+    if (!cleanText && !isOffer) throw new Error("اكتب رسالة أو أدخل عرض السعر.");
+    const batch = writeBatch(db);
+    const messageRef = doc(collection(db, "chats", chatId, "messages"));
+    const message = { senderUid: uid, text: cleanText || "عرض سعر", type: isOffer ? "offer" : "text", createdAt: serverTimestamp() };
+    if (isOffer) message.offerPrice = String(offerPrice).trim();
+    batch.set(messageRef, message);
+    batch.update(chatRef, {
+      lastMessage: isOffer ? ("عرض سعر: " + String(offerPrice).trim()) : cleanText.slice(0, 500),
+      lastMessageAt: serverTimestamp(),
+      lastSenderUid: uid
+    });
+    await batch.commit();
+  },
+  watchMyChats: (callback, onError) => {
+    if (!auth.currentUser) { callback([]); return () => {}; }
+    return onSnapshot(query(collection(db, "chats"), where("participants", "array-contains", auth.currentUser.uid)), snap => {
+      const chats = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => ((b.lastMessageAt?.seconds || 0) - (a.lastMessageAt?.seconds || 0)));
+      callback(chats);
+    }, onError);
+  },
+  watchChatMessages: (chatId, callback, onError) => onSnapshot(
+    query(collection(db, "chats", chatId, "messages"), orderBy("createdAt", "asc")),
+    snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+    onError
+  ),
   watchListings: (callback, onError) => onSnapshot(
     query(collection(db, "listings"), orderBy("createdAt", "desc"), limit(13)),
     async snapshot => {
