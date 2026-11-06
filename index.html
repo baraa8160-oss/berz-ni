@@ -154,7 +154,7 @@ async function showListingDetail(id){
  [ '📍 '+(item.wilaya||'ولاية غير محددة'), item.kind==='exchange'?'• للمقايضة':item.kind==='business'?'• للشركات':'• للبيع', '👤 '+(item.ownerName||'عضو برزني'), '📅 '+date, '👁️ المشاهدات: '+Math.max(0,Number(item.views)||0) ].forEach(value=>{const span=document.createElement('span');span.textContent=value;meta.appendChild(span)});
  const actions=host.querySelector('#detailActions');
  if(wa){const link=document.createElement('a');link.className='btn primary';link.style.cssText='background:#168b55;color:white';link.href='https://wa.me/'+wa;link.target='_blank';link.rel='noopener';link.textContent='تواصل عبر واتساب';actions.appendChild(link)}
- if(currentUser&&item.ownerUid!==currentUser.uid){const negotiate=document.createElement('button');negotiate.className='btn primary';negotiate.textContent='💬 تفاوض مع البائع';negotiate.addEventListener('click',()=>startNegotiation(item.id));actions.appendChild(negotiate)}
+ if(!currentUser||item.ownerUid!==currentUser.uid){const negotiate=document.createElement('button');negotiate.className='btn primary';negotiate.textContent='💬 تفاوض مع البائع';negotiate.addEventListener('click',()=>startNegotiation(item.id));actions.appendChild(negotiate)}
  const favorite=document.createElement('button');favorite.className='favorite-toggle '+(isFavorite(item.id)?'saved':'');favorite.textContent=isFavorite(item.id)?'♥ محفوظ في المفضلة':'♡ أضف إلى المفضلة';favorite.addEventListener('click',()=>toggleFavorite(item.id));actions.appendChild(favorite);
  const share=document.createElement('button');share.className='btn light';share.textContent='مشاركة الإعلان ↗';share.addEventListener('click',shareListing);actions.appendChild(share);
  if(isSiteAdmin()){const remove=document.createElement('button');remove.className='btn light';remove.style.color='#b42318';remove.textContent='حذف الإعلان';remove.addEventListener('click',()=>deleteListing(item.id));actions.appendChild(remove)}
@@ -300,7 +300,7 @@ function closeMessages(){const root=document.getElementById("chatOverlay");if(ro
 function openMessages(){if(!currentUser){openAuth();document.getElementById("authMessage").textContent="سجّل الدخول لعرض رسائلك والتفاوض.";return}const root=ensureChatWindow();root.classList.add("show");loadMyChats()}
 async function startNegotiation(listingId){
  if(!currentUser){openAuth();document.getElementById("authMessage").textContent="سجّل الدخول أولاً لبدء التفاوض مع البائع.";return}
- try{const chat=await window.berzniFirebase.openOrCreateChat(listingId);openMessages();openChatRoom(chat.id)}
+ try{const chat=await window.berzniFirebase.openOrCreateChat(listingId);openMessages();openChatRoom(chat.id,chat)}
  catch(err){console.error("Start negotiation:",err);alert(err.message||"تعذر بدء المحادثة.")}
 }
 function loadMyChats(){
@@ -322,8 +322,8 @@ function renderChatList(){
   item.append(title,preview,role);item.addEventListener("click",()=>openChatRoom(chat.id));list.appendChild(item);
  });
 }
-function openChatRoom(chatId){
- const chat=cachedChats.find(x=>x.id===chatId);if(!chat)return;
+function openChatRoom(chatId,suppliedChat){
+ const chat=cachedChats.find(x=>x.id===chatId)||suppliedChat;if(!chat)return;
  if(activeMessagesUnsubscribe)activeMessagesUnsubscribe();
  activeChatId=chatId;renderChatList();
  const root=ensureChatWindow(),box=root.querySelector("#chatMessages");
